@@ -8,12 +8,13 @@ Listen to denoised samples under varying noise conditions and SNRs [here](http:/
 Installation
 -----
 
+Uses **Tensorflow 2.0** and **Python 3**
+
 It is recommended to use a [virtual environment](http://virtualenvwrapper.readthedocs.io/en/latest/install.html)
 
 1. `git clone https://github.com/jbgh2/speech-denoising-wavenet.git`
 2. `pip install -r requirements.txt`
 
-*Currently the project requires **Tensorflow 2.0** and **Python 3***
 
 Usage
 -----
