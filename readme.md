@@ -10,11 +10,10 @@ Installation
 
 It is recommended to use a [virtual environment](http://virtualenvwrapper.readthedocs.io/en/latest/install.html)
 
-1. `git clone https://github.com/drethage/speech-denoising-wavenet.git`
+1. `git clone https://github.com/jbgh2/speech-denoising-wavenet.git`
 2. `pip install -r requirements.txt`
-3. Install [pygpu](http://deeplearning.net/software/libgpuarray/installation.html)
 
-*Currently the project requires **Tensorflow 2.0**, the large dilations present in the architecture are not supported by the current version of Tensorflow (1.2.0)*
+*Currently the project requires **Tensorflow 2.0** and **Python 3***
 
 Usage
 -----
