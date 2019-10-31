@@ -14,7 +14,7 @@ It is recommended to use a [virtual environment](http://virtualenvwrapper.readth
 2. `pip install -r requirements.txt`
 3. Install [pygpu](http://deeplearning.net/software/libgpuarray/installation.html)
 
-*Currently the project requires **Keras 1.2** and **Theano 0.9.0**, the large dilations present in the architecture are not supported by the current version of Tensorflow (1.2.0)*
+*Currently the project requires **Tensorflow 2.0**, the large dilations present in the architecture are not supported by the current version of Tensorflow (1.2.0)*
 
 Usage
 -----
@@ -25,16 +25,16 @@ A pre-trained model (best-performing model described in the paper) can be found 
 
 #### Denoising:
 
-Example: `THEANO_FLAGS=optimizer=fast_compile,device=gpu python main.py --mode inference --config sessions/001/config.json --noisy_input_path data/NSDTSEA/noisy_testset_wav --clean_input_path data/NSDTSEA/clean_testset_wav`
+Example: `python main.py --mode inference --config sessions/001/config.json --noisy_input_path data/NSDTSEA/noisy_testset_wav --clean_input_path data/NSDTSEA/clean_testset_wav`
 
 ###### Speedup
 To achieve faster denoising, one can increase the target-field length by use of the optional `--target_field_length` argument. This defines the amount of samples that are denoised in a single forward propagation, saving redundant calculations. In the following example, it is increased 10x that of when the model was trained, the batch_size is reduced to 4.
 
-Faster Example: `THEANO_FLAGS=device=gpu python main.py --mode inference --target_field_length 16001 --batch_size 4 --config sessions/001/config.json --noisy_input_path data/NSDTSEA/noisy_testset_wav --clean_input_path data/NSDTSEA/clean_testset_wav`
+Faster Example: `python main.py --mode inference --target_field_length 16001 --batch_size 4 --config sessions/001/config.json --noisy_input_path data/NSDTSEA/noisy_testset_wav --clean_input_path data/NSDTSEA/clean_testset_wav`
 
 #### Training:
 
-`THEANO_FLAGS=device=gpu python main.py --mode training --config config.json`
+`python main.py --mode training --config config.json`
 
 #### Configuration
 A detailed description of all configurable parameters can be found in [config.md](https://github.com/drethage/speech-denoising-wavenet/blob/master/config.md)

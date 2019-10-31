@@ -106,9 +106,9 @@ def inference(config, cla):
     if not bool(cla.one_shot):
         model = models.DenoisingWavenet(config, target_field_length=cla.target_field_length,
                                         load_checkpoint=cla.load_checkpoint, print_model_summary=cla.print_model_summary)
-        print 'Performing inference..'
+        print('Performing inference..')
     else:
-        print 'Performing one-shot inference..'
+        print('Performing one-shot inference..')
 
     samples_folder_path = os.path.join(config['training']['path'], 'samples')
     output_folder_path = get_valid_output_folder_path(samples_folder_path)
@@ -148,7 +148,7 @@ def inference(config, cla):
                     input['clean'] = input['clean'][:-1]
             model = models.DenoisingWavenet(config, load_checkpoint=cla.load_checkpoint, input_length=len(input['noisy']), print_model_summary=cla.print_model_summary)
 
-        print "Denoising: " + filename
+        print("Denoising: " + filename)
         denoise.denoise_sample(model, input, condition_input, batch_size, output_filename_prefix,
                                             config['dataset']['sample_rate'], output_folder_path)
 

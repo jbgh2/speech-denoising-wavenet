@@ -29,7 +29,7 @@ class NSDTSEADataset():
 
     def load_dataset(self):
 
-        print 'Loading NSDTSEA dataset...'
+        print('Loading NSDTSEA dataset...')
 
         for set in ['train', 'test']:
             for condition in ['clean', 'noisy']:
