@@ -1,7 +1,7 @@
 # A Wavenet For Speech Denoising - Dario Rethage - 19.05.2017
 # Layers.py
 
-import keras
+import tensorflow.keras as keras
 
 
 class AddSingletonDepth(keras.layers.Layer):
