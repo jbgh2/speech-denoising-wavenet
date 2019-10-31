@@ -104,5 +104,4 @@ ENV/
 .DS_Store
 
 #VS Code
-.vscode/launch.json
-.vscode/settings.json
+.vscode/*
