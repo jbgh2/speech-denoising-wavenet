@@ -71,6 +71,9 @@ def denoise_sample(model, input, condition_input, batch_size, output_filename_pr
         denoised_output = denoised_output[:-num_pad_values]
         noise_output = noise_output[:-num_pad_values]
 
+    print("model.half_receptive_field_length:", model.half_receptive_field_length)
+    print("model.half_receptive_field_length + len(denoised_output):", model.half_receptive_field_length + len(denoised_output))
+
     valid_noisy_signal = input['noisy'][
                          model.half_receptive_field_length:model.half_receptive_field_length + len(denoised_output)]
 
