@@ -17,7 +17,7 @@ def set_system_settings():
     logging.getLogger().setLevel(logging.INFO)
 
 
-def get_command_line_arguments():
+def get_command_line_arguments(prog_args=None):
     parser = optparse.OptionParser()
     parser.set_defaults(config='config.json')
     parser.set_defaults(mode='training')
@@ -42,7 +42,7 @@ def get_command_line_arguments():
     parser.add_option('--target_field_length', dest='target_field_length')
 
 
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(args=prog_args)
 
     return options
 
