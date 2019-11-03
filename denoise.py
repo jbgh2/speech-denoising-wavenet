@@ -45,20 +45,12 @@ def denoise_sample(model, input, condition_input, batch_size, output_filename_pr
 
         denoised_output_fragments = model.denoise_batch({'data_input': input_batch, 'condition_input': condition_batch})
 
-        print("denoised_output_fragments:", type(denoised_output_fragments))
-
         if type(denoised_output_fragments) is list:
             noise_output_fragment = denoised_output_fragments[1]
             denoised_output_fragment = denoised_output_fragments[0]
 
         denoised_output_fragment = denoised_output_fragment[:, model.target_padding: model.target_padding + model.target_field_length]
-        print("denoised_output_fragment - 1:", type(denoised_output_fragments))
-        denoised_output_fragment = denoised_output_fragment.numpy()
-        print("denoised_output_fragment.numpy():", type(denoised_output_fragments), denoised_output_fragment.shape)
-        denoised_output_fragment = denoised_output_fragment.flatten()
-        print("denoised_output_fragment.flatten():", type(denoised_output_fragment), denoised_output_fragment.shape)
-        denoised_output_fragment = denoised_output_fragment.tolist()
-        print("denoised_output_fragment.tolist():", type(denoised_output_fragment))
+        denoised_output_fragment = denoised_output_fragment.numpy().flatten().tolist()
 
         if noise_output_fragment is not None:
             noise_output_fragment = noise_output_fragment[:, model.target_padding: model.target_padding + model.target_field_length]
@@ -78,9 +70,6 @@ def denoise_sample(model, input, condition_input, batch_size, output_filename_pr
     if num_pad_values != 0:
         denoised_output = denoised_output[:-num_pad_values]
         noise_output = noise_output[:-num_pad_values]
-
-    print("model.half_receptive_field_length:", model.half_receptive_field_length)
-    print("model.half_receptive_field_length + len(denoised_output):", model.half_receptive_field_length + len(denoised_output))
 
     slice_start = int(model.half_receptive_field_length)
     slice_end = int(model.half_receptive_field_length + len(denoised_output))
