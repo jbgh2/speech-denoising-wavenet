@@ -148,6 +148,9 @@ def inference(config, cla):
                     input['clean'] = input['clean'][:-1]
             model = models.DenoisingWavenet(config, load_checkpoint=cla.load_checkpoint, input_length=len(input['noisy']), print_model_summary=cla.print_model_summary)
 
+        print("Summary:")
+        model.summary()
+
         print("Denoising: " + filename)
         denoise.denoise_sample(model, input, condition_input, batch_size, output_filename_prefix,
                                             config['dataset']['sample_rate'], output_folder_path)
