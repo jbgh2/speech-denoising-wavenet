@@ -5,6 +5,7 @@ import util
 import os
 import numpy as np
 import logging
+import pickle
 
 class NSDTSEADataset():
 
@@ -27,16 +28,40 @@ class NSDTSEADataset():
         self.num_sequences_in_memory = 0
         self.condition_encode_function = util.get_condition_input_encode_func(config['model']['condition_encoding'])
 
-    def load_dataset(self):
+    def load_dataset(self, from_zip):
 
         print('Loading NSDTSEA dataset...')
 
         for set in ['train', 'test']:
             for condition in ['clean', 'noisy']:
-                current_directory = os.path.join(self.path, condition+'_'+set+'set_wav')
+                dataset_name = f"{condition}_{set}set_wav"
 
-                sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
-                    self.load_directory(current_directory, condition)
+                current_directory = os.path.join(self.path, dataset_name)
+                print(f"Loading files for {condition} {set}")
+
+                pickle_file = os.path.join(self.path, f"{dataset_name}.pkl")
+                if os.path.isfile(pickle_file):
+                    print(f"Loading {condition} {set} from {pickle_file}")
+                    with open(pickle_file, "rb") as pf:
+                        sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
+                            pickle.load(pf)
+
+                else:
+                    data_zip_file = os.path.join(self.path, f"{dataset_name}.zip")
+
+                    if from_zip:
+                        print(f"Loading data from {data_zip_file}")
+                        sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
+                            self.load_zip_file(data_zip_file, condition)
+                    else:
+                        print(f"Loading data from {current_directory}")
+                        sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
+                            self.load_directory(current_directory, condition)
+
+                    with open(pickle_file, "wb") as pf:
+                        print(f"Pickling {condition} {set} dataset to {pickle_file}")
+                        pickle.dump((sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors),
+                                    pf)
 
                 self.file_paths[set][condition] = file_paths
                 self.speakers[set] = speakers
@@ -47,6 +72,52 @@ class NSDTSEADataset():
                     self.regain_factors[set] = regain_factors
 
         return self
+
+    def load_zip_file(self, zip_path, condition):
+        """
+        Replacement for load_directory that reads from a zip file rather than a directory
+        """
+        from zipfile import ZipFile
+
+        with ZipFile(zip_path, 'r') as zf:
+            filenames = zf.namelist()
+
+            speakers = []
+            file_paths = []
+            speech_onset_offset_indices = []
+            regain_factors = []
+            sequences = []
+            for filename in filenames:
+
+                speaker_name = filename[0:4]
+                speakers.append(speaker_name)
+
+                with zf.open(filename) as filepath:
+
+                    if condition == 'clean':
+
+                        sequence = util.load_wav(filepath, self.sample_rate)
+                        sequences.append(sequence)
+                        self.num_sequences_in_memory += 1
+                        regain_factors.append(self.regain / util.rms(sequence))
+
+                        if self.extract_voice:
+                            speech_onset_offset_indices.append(util.get_subsequence_with_speech_indices(sequence))
+                    else:
+                        if self.in_memory_percentage == 1 or np.random.uniform(0, 1) <= (self.in_memory_percentage-0.5)*2:
+                            sequence = util.load_wav(filepath, self.sample_rate)
+                            sequences.append(sequence)
+                            self.num_sequences_in_memory += 1
+                        else:
+                            sequences.append([-1])
+
+                    if speaker_name not in self.speaker_mapping:
+                        self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
+
+                    file_paths.append(filename)
+
+        return sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors
+
 
     def load_directory(self, directory_path, condition):
 

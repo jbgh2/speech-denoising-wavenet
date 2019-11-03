@@ -29,9 +29,10 @@ def get_command_line_arguments(prog_args=None):
     parser.set_defaults(noisy_input_path=None)
     parser.set_defaults(print_model_summary=False)
     parser.set_defaults(target_field_length=None)
+    parser.set_defaults(use_zipped_dataset=False)
 
     parser.add_option('--mode', dest='mode')
-    parser.add_option('--print_model_summary', dest='print_model_summary')
+    parser.add_option('--print_model_summary', action="store_true", dest='print_model_summary')
     parser.add_option('--config', dest='config')
     parser.add_option('--load_checkpoint', dest='load_checkpoint')
     parser.add_option('--condition_value', dest='condition_value')
@@ -40,6 +41,7 @@ def get_command_line_arguments(prog_args=None):
     parser.add_option('--noisy_input_path', dest='noisy_input_path')
     parser.add_option('--clean_input_path', dest='clean_input_path')
     parser.add_option('--target_field_length', dest='target_field_length')
+    parser.add_option('--use_zipped_dataset', action="store_true", dest='use_zipped_dataset')
 
 
     (options, args) = parser.parse_args(args=prog_args)
@@ -58,19 +60,19 @@ def load_config(config_filepath):
             return json.load(config_file)
 
 
-def get_dataset(config, model):
+def get_dataset(config, model, from_zip=True):
 
     if config['dataset']['type'] == 'vctk+demand':
-        return datasets.VCTKAndDEMANDDataset(config, model).load_dataset()
+        return datasets.VCTKAndDEMANDDataset(config, model).load_dataset(from_zip)
     elif config['dataset']['type'] == 'nsdtsea':
-        return datasets.NSDTSEADataset(config, model).load_dataset()
+        return datasets.NSDTSEADataset(config, model).load_dataset(from_zip)
 
 
 def training(config, cla):
 
     # Instantiate Model
     model = models.DenoisingWavenet(config, load_checkpoint=cla.load_checkpoint, print_model_summary=cla.print_model_summary)
-    dataset = get_dataset(config, model)
+    dataset = get_dataset(config, model, cla.use_zipped_dataset)
 
     num_train_samples = config['training']['num_train_samples']
     num_test_samples = config['training']['num_test_samples']
