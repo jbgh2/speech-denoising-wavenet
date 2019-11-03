@@ -108,3 +108,6 @@ ENV/
 
 #Data dir
 data/*
+
+#Output samples dirs
+sessions/*/samples/*
