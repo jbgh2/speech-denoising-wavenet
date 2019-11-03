@@ -74,14 +74,15 @@ def denoise_sample(model, input, condition_input, batch_size, output_filename_pr
     print("model.half_receptive_field_length:", model.half_receptive_field_length)
     print("model.half_receptive_field_length + len(denoised_output):", model.half_receptive_field_length + len(denoised_output))
 
-    valid_noisy_signal = input['noisy'][
-                         model.half_receptive_field_length:model.half_receptive_field_length + len(denoised_output)]
+    slice_start = int(model.half_receptive_field_length)
+    slice_end = int(model.half_receptive_field_length + len(denoised_output))
+
+    valid_noisy_signal = input['noisy'][slice_start:slice_end]
 
     if input['clean'] is not None:
         input['noise'] = input['noisy'] - input['clean']
 
-        valid_clean_signal = input['clean'][
-                         model.half_receptive_field_length:model.half_receptive_field_length + len(denoised_output)]
+        valid_clean_signal = input['clean'][slice_start:slice_end]
 
         noise_in_denoised_output = denoised_output - valid_clean_signal
 
