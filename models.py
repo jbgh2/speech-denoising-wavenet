@@ -160,9 +160,9 @@ class DenoisingWavenet():
 
         self.model.fit_generator(train_set_generator,
                                  num_train_samples,
-                                 nb_epoch=num_epochs,
+                                 epochs=num_epochs,
                                  validation_data=test_set_generator,
-                                 nb_val_samples=num_test_samples,
+                                 validation_steps=num_test_samples,
                                  callbacks=self.get_callbacks(),
                                  verbose=self.verbosity,
                                  initial_epoch=self.epoch_num)
