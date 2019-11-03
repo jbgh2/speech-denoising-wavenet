@@ -114,7 +114,7 @@ class NSDTSEADataset():
                             speech_onset_offset_indices.append(util.get_subsequence_with_speech_indices(sequence))
                     else:
                         if self.in_memory_percentage == 1 or np.random.uniform(0, 1) <= (self.in_memory_percentage-0.5)*2:
-                            sequence = util.load_wav(filepath, self.sample_rate)
+                            sequence = util.load_wav(io.BytesIO(sound_bytes), self.sample_rate)
                             sequences.append(sequence)
                             self.num_sequences_in_memory += 1
                         else:
