@@ -212,7 +212,7 @@ def get_subsequence_with_speech_indices(full_sequence):
     chunk_length = 800
 
     chunks_energies = []
-    for i in xrange(0, len(signal_magnitude), chunk_length):
+    for i in range(0, len(signal_magnitude), chunk_length):
         chunks_energies.append(np.mean(signal_magnitude[i:i + chunk_length]))
 
     threshold = np.max(chunks_energies) * .1
