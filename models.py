@@ -159,7 +159,7 @@ class DenoisingWavenet():
         print('Fitting model with %d training samples and %d test samples...' % (num_train_samples, num_test_samples))
 
         self.model.fit_generator(train_set_generator,
-                                 num_train_samples,
+                                 steps_per_epoch=num_train_samples,
                                  epochs=num_epochs,
                                  validation_data=test_set_generator,
                                  validation_steps=num_test_samples,
