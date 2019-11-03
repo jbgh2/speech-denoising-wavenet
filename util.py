@@ -32,7 +32,7 @@ def compute_receptive_field_length(stacks, dilations, filter_length, target_fiel
     length = 2*length
     length = stacks * length
     length += target_field_length
-    return length
+    return int(length)
 
 
 def snr_db(rms_amplitude_A, rms_amplitude_B):
