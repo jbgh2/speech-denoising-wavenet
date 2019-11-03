@@ -6,6 +6,7 @@ import os
 import numpy as np
 import logging
 import pickle
+import io
 
 class NSDTSEADataset():
 
@@ -50,11 +51,11 @@ class NSDTSEADataset():
                     data_zip_file = os.path.join(self.path, f"{dataset_name}.zip")
 
                     if from_zip:
-                        print(f"Loading data from {data_zip_file}")
+                        print(f"Loading zipped data from {data_zip_file}")
                         sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
                             self.load_zip_file(data_zip_file, condition)
                     else:
-                        print(f"Loading data from {current_directory}")
+                        print(f"Loading data from directory {current_directory}")
                         sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
                             self.load_directory(current_directory, condition)
 
@@ -89,14 +90,22 @@ class NSDTSEADataset():
             sequences = []
             for filename in filenames:
 
+                if len(filename) == 0 or filename.endswith('/') or filename.endswith('\\'):
+                    print(f"Skipping {filename}.")
+                    continue
+
                 speaker_name = filename[0:4]
                 speakers.append(speaker_name)
 
                 with zf.open(filename) as filepath:
 
+                    sound_bytes = filepath.read()
+                    if len(sound_bytes) == 0:
+                        continue #empty file or directory
+
                     if condition == 'clean':
 
-                        sequence = util.load_wav(filepath, self.sample_rate)
+                        sequence = util.load_wav(io.BytesIO(sound_bytes), self.sample_rate)
                         sequences.append(sequence)
                         self.num_sequences_in_memory += 1
                         regain_factors.append(self.regain / util.rms(sequence))
