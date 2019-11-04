@@ -97,13 +97,17 @@ class NSDTSEADataset():
             max_to_load = int( len(filenames) * self.percent_to_load ) 
             num_loaded = 0
 
-            for filename in filenames:
+            for full_path in filenames:
 
-                if len(filename) == 0 or filename.endswith('/') or filename.endswith('\\'):
-                    print(f"Skipping {filename}.")
+                if len(full_path) == 0 or full_path.endswith('/') or full_path.endswith('\\'):
+                    print(f"Skipping {full_path}.")
                     continue
 
+                filename = os.path.basename(full_path)
+
                 speaker_name = filename[0:4]
+                if not speaker_name.startswith('p'):
+                    raise Exception(f"speaker_name doesn't start with p: {speaker_name} from {filename}")
                 speakers.append(speaker_name)
 
                 with zf.open(filename) as filepath:
