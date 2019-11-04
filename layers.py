@@ -14,7 +14,7 @@ class AddSingletonDepth(keras.layers.Layer):
         else:
             return x
 
-    def get_output_shape_for(self, input_shape):
+    def compute_output_shape(self, input_shape):
         if len(input_shape) == 3:
             return input_shape[0], 1, input_shape[1], input_shape[2]
         else:
@@ -29,7 +29,7 @@ class Subtract(keras.layers.Layer):
     def call(self, x, mask=None):
         return x[0] - x[1]
 
-    def get_output_shape_for(self, input_shape):
+    def compute_output_shape(self, input_shape):
         return input_shape[0]
 
 
@@ -37,13 +37,52 @@ class Slice(keras.layers.Layer):
 
     def __init__(self, selector, output_shape, **kwargs):
         self.selector = selector
+        
+        self._selector_to_config()
+        #print("Slice selector:", self.selector, "Type:", type(self.selector))
+        
         self.desired_output_shape = output_shape
         super(Slice, self).__init__(**kwargs)
 
+    def _selector_to_config(self):
+        selector_config = []
+        for v in self.selector:
+            if isinstance(v, type(Ellipsis)):
+                selector_config.append("...")
+            elif isinstance(v, int):
+                selector_config.append(v)
+            elif isinstance(v, slice):
+                selector_config.append([v.start, v.stop, v.step])
+            else:
+                raise Exception(f"Unknown type in selector: {type(v)}. Expects: Ellipsis, int or slice")
+
+        return selector_config
+
+    @classmethod
+    def _selector_from_config(cls, config):
+        new_selector = []
+        for v in config:
+            if isinstance(v, str) and v == '...':
+                new_selector.append(Ellipsis)
+            elif isinstance(v, int):
+                new_selector.append(v)
+            elif isinstance(v, list):
+                new_selector.append( slice(v[0], v[1], v[2]) )
+            else:
+                raise Exception(f"Unknown type in config: {type(v)}. Expects: string (...), int or list")
+
+        return tuple(new_selector)
+
     def get_config(self):
         config = super(Slice, self).get_config()
-        config.update({'selector': self.selector, 'desired_output_shape': self.desired_output_shape})
+        config.update({'selector': self._selector_to_config(), 'desired_output_shape': self.desired_output_shape})
         return config
+
+    @classmethod
+    def from_config(cls, config):
+        selector = Slice._selector_from_config(config.pop('selector'))
+        return cls(selector, **config)
+        
 
     def call(self, x, mask=None):
 
@@ -59,7 +98,7 @@ class Slice(keras.layers.Layer):
 
         return y
 
-    def get_output_shape_for(self, input_shape):
+    def compute_output_shape(self, input_shape):
 
         output_shape = (None,)
         for i, dim_length in enumerate(self.desired_output_shape):
