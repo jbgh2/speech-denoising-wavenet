@@ -110,7 +110,7 @@ class NSDTSEADataset():
                     raise Exception(f"speaker_name doesn't start with p: {speaker_name} from {filename}")
                 speakers.append(speaker_name)
 
-                with zf.open(filename) as filepath:
+                with zf.open(full_path) as filepath:
 
                     sound_bytes = filepath.read()
                     if len(sound_bytes) == 0:
@@ -136,7 +136,7 @@ class NSDTSEADataset():
                     if speaker_name not in self.speaker_mapping:
                         self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
 
-                    file_paths.append(filename)
+                    file_paths.append(full_path)
 
                 num_loaded += 1
                 if num_loaded >= max_to_load:
