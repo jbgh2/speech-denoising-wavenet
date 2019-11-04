@@ -67,6 +67,10 @@ class NSDTSEADataset():
                         pickle.dump((sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors),
                                     pf)
 
+                for speaker_name in speakers:
+                    if speaker_name not in self.speaker_mapping:
+                        self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
+
                 self.file_paths[set][condition] = file_paths
                 self.speakers[set] = speakers
                 self.sequences[set][condition] = sequences
@@ -133,8 +137,8 @@ class NSDTSEADataset():
                         else:
                             sequences.append([-1])
 
-                    if speaker_name not in self.speaker_mapping:
-                        self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
+                    # if speaker_name not in self.speaker_mapping:
+                    #     self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
 
                     file_paths.append(full_path)
 
@@ -183,8 +187,8 @@ class NSDTSEADataset():
                 else:
                     sequences.append([-1])
 
-            if speaker_name not in self.speaker_mapping:
-                self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
+            # if speaker_name not in self.speaker_mapping:
+            #     self.speaker_mapping[speaker_name] = len(self.speaker_mapping) + 1
 
             file_paths.append(filepath)
 
