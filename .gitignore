@@ -111,3 +111,4 @@ data/*
 
 #Output samples dirs
 sessions/*/samples/*
+sessions/*/checkpoints/*
