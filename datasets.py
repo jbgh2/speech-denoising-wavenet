@@ -26,21 +26,24 @@ class NSDTSEADataset():
         self.regain = config['dataset']['regain']
         self.extract_voice = config['dataset']['extract_voice']
         self.in_memory_percentage = config['dataset']['in_memory_percentage']
+        self.percent_to_load = config['dataset'].get('percent_to_load', 1.0)
         self.num_sequences_in_memory = 0
         self.condition_encode_function = util.get_condition_input_encode_func(config['model']['condition_encoding'])
 
     def load_dataset(self, from_zip):
 
         print('Loading NSDTSEA dataset...')
+        percent = int( self.percent_to_load * 100 )
 
         for set in ['train', 'test']:
+
             for condition in ['clean', 'noisy']:
                 dataset_name = f"{condition}_{set}set_wav"
 
                 current_directory = os.path.join(self.path, dataset_name)
-                print(f"Loading files for {condition} {set}")
+                print(f"Loading {percent}% files for {condition} {set}")
 
-                pickle_file = os.path.join(self.path, f"{dataset_name}.pkl")
+                pickle_file = os.path.join(self.path, f"{dataset_name}_{percent}.pkl")
                 if os.path.isfile(pickle_file):
                     print(f"Loading {condition} {set} from {pickle_file}")
                     with open(pickle_file, "rb") as pf:
@@ -48,9 +51,9 @@ class NSDTSEADataset():
                             pickle.load(pf)
 
                 else:
-                    data_zip_file = os.path.join(self.path, f"{dataset_name}.zip")
 
                     if from_zip:
+                        data_zip_file = os.path.join(self.path, f"{dataset_name}.zip")
                         print(f"Loading zipped data from {data_zip_file}")
                         sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors = \
                             self.load_zip_file(data_zip_file, condition)
@@ -80,14 +83,20 @@ class NSDTSEADataset():
         """
         from zipfile import ZipFile
 
-        with ZipFile(zip_path, 'r') as zf:
-            filenames = zf.namelist()
+        speakers = []
+        file_paths = []
+        speech_onset_offset_indices = []
+        regain_factors = []
+        sequences = []
 
-            speakers = []
-            file_paths = []
-            speech_onset_offset_indices = []
-            regain_factors = []
-            sequences = []
+        with ZipFile(zip_path, 'r') as zf:
+            
+            filenames = zf.namelist()
+            filenames.sort() #Files can be in a random order in zip file
+
+            max_to_load = int( len(filenames) * self.percent_to_load ) 
+            num_loaded = 0
+
             for filename in filenames:
 
                 if len(filename) == 0 or filename.endswith('/') or filename.endswith('\\'):
@@ -125,19 +134,28 @@ class NSDTSEADataset():
 
                     file_paths.append(filename)
 
+                num_loaded += 1
+                if num_loaded >= max_to_load:
+                    print(f"Loaded {num_loaded} samples. Stopping.")
+                    break
+
         return sequences, file_paths, speakers, speech_onset_offset_indices, regain_factors
 
 
     def load_directory(self, directory_path, condition):
-
-        filenames = [filename for filename in os.listdir(directory_path) if filename.endswith('.wav')]
 
         speakers = []
         file_paths = []
         speech_onset_offset_indices = []
         regain_factors = []
         sequences = []
-        for filename in filenames:
+
+        filenames = [filename for filename in os.listdir(directory_path) if filename.endswith('.wav')]
+        filenames.sort()
+
+        max_to_load = int( len(filenames) * self.percent_to_load ) 
+
+        for filename in filenames[:max_to_load]:
 
             speaker_name = filename[0:4]
             speakers.append(speaker_name)

@@ -2,6 +2,7 @@
     "dataset": {
         "extract_voice": true,
         "in_memory_percentage": 1,
+        "percent_to_load": 0.1,
         "noise_only_percent": 0.1,
         "num_condition_classes": 29,
         "path": "data/NSDTSEA/",
