@@ -40,6 +40,11 @@ class Slice(keras.layers.Layer):
         self.desired_output_shape = output_shape
         super(Slice, self).__init__(**kwargs)
 
+    def get_config(self):
+        config = super(Slice, self).get_config()
+        config.update({'selector': self.selector, 'desired_output_shape': self.desired_output_shape})
+        return config
+
     def call(self, x, mask=None):
 
         selector = self.selector
@@ -53,7 +58,6 @@ class Slice(keras.layers.Layer):
             y = keras.backend.permute_dimensions(y, [0, 2, 1])
 
         return y
-
 
     def get_output_shape_for(self, input_shape):
 
