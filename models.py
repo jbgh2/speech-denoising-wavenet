@@ -68,16 +68,17 @@ class DenoisingWavenet():
 
     def setup_model(self, load_checkpoint=None, print_model_summary=False):
 
-        self.checkpoints_path = os.path.join(self.config['training']['path'], 'checkpoints')
-        self.samples_path = os.path.join(self.config['training']['path'], 'samples')
-        self.history_filename = 'history_' + self.config['training']['path'][
-                                             self.config['training']['path'].rindex('/') + 1:] + '.csv'
+        training_path = self.config['training']['path']
+        self.checkpoints_path = os.path.join(training_path, 'checkpoints')
+        self.samples_path = os.path.join(training_path, 'samples')
+        self.history_filename = 'history_' + training_path[training_path.rindex('/') + 1:] + '.csv'
 
         model = self.build_model()
 
         if os.path.exists(self.checkpoints_path) and util.dir_contains_files(self.checkpoints_path):
 
             if load_checkpoint is not None:
+                print(f"Loading from specified checkpoint: {load_checkpoint}")
                 last_checkpoint_path = load_checkpoint
                 self.epoch_num = 0
             else:
@@ -86,14 +87,15 @@ class DenoisingWavenet():
                 last_checkpoint = checkpoints[-1]
                 last_checkpoint_path = os.path.join(self.checkpoints_path, last_checkpoint)
                 self.epoch_num = int(last_checkpoint[11:16])
-            print('Loading model from epoch: %d' % self.epoch_num)
+                print('Loading model from epoch: %d' % self.epoch_num)
+            
             model.load_weights(last_checkpoint_path)
 
         else:
             print('Building new model...')
 
-            if not os.path.exists(self.config['training']['path']):
-                os.mkdir(self.config['training']['path'])
+            if not os.path.exists(training_path):
+                os.mkdir(training_path)
 
             if not os.path.exists(self.checkpoints_path):
                 os.mkdir(self.checkpoints_path)
@@ -111,7 +113,7 @@ class DenoisingWavenet():
                       metrics=self.metrics)
         self.config['model']['num_params'] = model.count_params()
 
-        config_path = os.path.join(self.config['training']['path'], 'config.json')
+        config_path = os.path.join(training_path, 'config.json')
         if not os.path.exists(config_path):
             util.pretty_json_dump(self.config, config_path)
 
@@ -126,29 +128,28 @@ class DenoisingWavenet():
 
     def get_out_1_loss(self):
 
-        if self.config['training']['loss']['out_1']['weight'] == 0:
+        loss_out_1 = self.config['training']['loss']['out_1']
+        if loss_out_1['weight'] == 0:
             return lambda y_true, y_pred: y_true * 0
 
-        return lambda y_true, y_pred: self.config['training']['loss']['out_1']['weight'] * util.l1_l2_loss(
-            y_true, y_pred, self.config['training']['loss']['out_1']['l1'],
-            self.config['training']['loss']['out_1']['l2'])
+        return lambda y_true, y_pred: loss_out_1['weight'] * util.l1_l2_loss(y_true, y_pred, loss_out_1['l1'], loss_out_1['l2'])
 
     def get_out_2_loss(self):
 
-        if self.config['training']['loss']['out_2']['weight'] == 0:
+        loss_out_2 = self.config['training']['loss']['out_2']
+        if loss_out_2['weight'] == 0:
             return lambda y_true, y_pred: y_true * 0
 
-        return lambda y_true, y_pred: self.config['training']['loss']['out_2']['weight'] * util.l1_l2_loss(
-            y_true, y_pred, self.config['training']['loss']['out_2']['l1'],
-            self.config['training']['loss']['out_2']['l2'])
+        return lambda y_true, y_pred: loss_out_2['weight'] * util.l1_l2_loss(y_true, y_pred, loss_out_2['l1'], loss_out_2['l2'])
 
     def get_callbacks(self):
 
+        patience = self.config['training']['early_stopping_patience']
         return [
-            keras.callbacks.ReduceLROnPlateau(patience=self.config['training']['early_stopping_patience'] / 2,
-                                              cooldown=self.config['training']['early_stopping_patience'] / 4,
+            keras.callbacks.ReduceLROnPlateau(patience=patience / 2,
+                                              cooldown=patience / 4,
                                               verbose=1),
-            keras.callbacks.EarlyStopping(patience=self.config['training']['early_stopping_patience'], verbose=1,
+            keras.callbacks.EarlyStopping(patience=patience, verbose=1,
                                           monitor='loss'),
             keras.callbacks.ModelCheckpoint(os.path.join(self.checkpoints_path, 'checkpoint.{epoch:05d}-{val_loss:.3f}.hdf5')),
             keras.callbacks.CSVLogger(os.path.join(self.config['training']['path'], self.history_filename), append=True)
@@ -221,13 +222,16 @@ class DenoisingWavenet():
             (self.padded_target_field_length,1),
             name='data_input_target_field_length')(data_expanded)
 
-        data_out = keras.layers.Convolution1D(self.config['model']['filters']['depths']['res'],
-                                              self.config['model']['filters']['lengths']['res'], 
+        filters_depths = self.config['model']['filters']['depths']
+        filters_lengths = self.config['model']['filters']['lengths']
+
+        data_out = keras.layers.Convolution1D(filters_depths['res'],
+                                              filters_lengths['res'], 
                                               padding='same',
                                               use_bias=False,
                                               name='initial_causal_conv')(data_expanded)
 
-        condition_out = keras.layers.Dense(self.config['model']['filters']['depths']['res'],
+        condition_out = keras.layers.Dense(filters_depths['res'],
                                            name='initial_dense_condition',
                                            use_bias=False)(condition_input)
         condition_out = keras.layers.RepeatVector(self.input_length,
@@ -248,12 +252,12 @@ class DenoisingWavenet():
         data_out = keras.layers.Add()(skip_connections)
         data_out = self.activation(data_out)
 
-        data_out = keras.layers.Convolution1D(self.config['model']['filters']['depths']['final'][0],
-                                              self.config['model']['filters']['lengths']['final'][0],
+        data_out = keras.layers.Convolution1D(filters_depths['final'][0],
+                                              filters_lengths['final'][0],
                                               padding='same',
                                               use_bias=False)(data_out)
 
-        condition_out = keras.layers.Dense(self.config['model']['filters']['depths']['final'][0],
+        condition_out = keras.layers.Dense(filters_depths['final'][0],
                                            use_bias=False,
                                            name='penultimate_conv_1d_condition')(condition_input)
 
@@ -263,12 +267,12 @@ class DenoisingWavenet():
         data_out = keras.layers.Add(name='penultimate_conv_1d_condition_merge')([data_out, condition_out])
 
         data_out = self.activation(data_out)
-        data_out = keras.layers.Convolution1D(self.config['model']['filters']['depths']['final'][1],
-                                              self.config['model']['filters']['lengths']['final'][1], 
+        data_out = keras.layers.Convolution1D(filters_depths['final'][1],
+                                              filters_lengths['final'][1], 
                                               padding='same',
                                               use_bias=False)(data_out)
 
-        condition_out = keras.layers.Dense(self.config['model']['filters']['depths']['final'][1], 
+        condition_out = keras.layers.Dense(filters_depths['final'][1], 
                                            use_bias=False,
                                            name='final_conv_1d_condition')(condition_input)
 
@@ -296,9 +300,14 @@ class DenoisingWavenet():
 
         original_x = data_x
 
+        filters_depths_res = self.config['model']['filters']['depths']['res']
+        filters_depths_skip = self.config['model']['filters']['depths']['skip']
+
+        filters_lengths_res = self.config['model']['filters']['lengths']['res']
+
         # Data sub-block
-        data_out = keras.layers.Convolution1D(2 * self.config['model']['filters']['depths']['res'],
-                                              self.config['model']['filters']['lengths']['res'],
+        data_out = keras.layers.Convolution1D(2 * filters_depths_res,
+                                              filters_lengths_res,
                                               dilation_rate=dilation, 
                                               padding='same',
                                               use_bias=False,
@@ -307,30 +316,30 @@ class DenoisingWavenet():
                                               activation=None)(data_x)
 
         data_out_1 = layers.Slice(
-            (Ellipsis, slice(0, self.config['model']['filters']['depths']['res'])),
-            (self.input_length, self.config['model']['filters']['depths']['res']),
+            (Ellipsis, slice(0, filters_depths_res)),
+            (self.input_length, filters_depths_res),
             name='res_%d_data_slice_1_d%d_s%d' % (self.num_residual_blocks, dilation, stack_i))(data_out)
 
         data_out_2 = layers.Slice(
-            (Ellipsis, slice(self.config['model']['filters']['depths']['res'],
-                             2 * self.config['model']['filters']['depths']['res'])),
-            (self.input_length, self.config['model']['filters']['depths']['res']),
+            (Ellipsis, slice(filters_depths_res,
+                             2 * filters_depths_res)),
+            (self.input_length, filters_depths_res),
             name='res_%d_data_slice_2_d%d_s%d' % (self.num_residual_blocks, dilation, stack_i))(data_out)
 
         # Condition sub-block
-        condition_out = keras.layers.Dense(2 * self.config['model']['filters']['depths']['res'],
+        condition_out = keras.layers.Dense(2 * filters_depths_res,
                                            name='res_%d_dense_condition_%d_s%d' % (res_block_i, layer_i, stack_i),
                                            use_bias=False)(condition_x)
 
-        condition_out = keras.layers.Reshape((self.config['model']['filters']['depths']['res'], 2),
+        condition_out = keras.layers.Reshape((filters_depths_res, 2),
                                              name='res_%d_condition_reshape_d%d_s%d' % (
                                                  res_block_i, dilation, stack_i))(condition_out)
 
-        condition_out_1 = layers.Slice((Ellipsis, 0), (self.config['model']['filters']['depths']['res'],),
+        condition_out_1 = layers.Slice((Ellipsis, 0), (filters_depths_res,),
                                               name='res_%d_condition_slice_1_d%d_s%d' % (
                                                   res_block_i, dilation, stack_i))(condition_out)
 
-        condition_out_2 = layers.Slice((Ellipsis, 1), (self.config['model']['filters']['depths']['res'],),
+        condition_out_2 = layers.Slice((Ellipsis, 1), (filters_depths_res,),
                                               name='res_%d_condition_slice_2_d%d_s%d' % (
                                                   res_block_i, dilation, stack_i))(condition_out)
 
@@ -351,22 +360,22 @@ class DenoisingWavenet():
                                     ([tanh_out, sigm_out])
 
         data_x = keras.layers.Convolution1D(
-            self.config['model']['filters']['depths']['res'] + self.config['model']['filters']['depths']['skip'], 1,
+            filters_depths_res + filters_depths_skip, 1,
             padding='same', 
             use_bias=False)(data_x)
 
-        res_x = layers.Slice((Ellipsis, slice(0, self.config['model']['filters']['depths']['res'])),
-                             (self.input_length, self.config['model']['filters']['depths']['res']),
+        res_x = layers.Slice((Ellipsis, slice(0, filters_depths_res)),
+                             (self.input_length, filters_depths_res),
                              name='res_%d_data_slice_3_d%d_s%d' % (res_block_i, dilation, stack_i))(data_x)
 
-        skip_x = layers.Slice((Ellipsis, slice(self.config['model']['filters']['depths']['res'],
-                                               self.config['model']['filters']['depths']['res'] +
-                                               self.config['model']['filters']['depths']['skip'])),
-                              (self.input_length, self.config['model']['filters']['depths']['skip']),
+        skip_x = layers.Slice((Ellipsis, slice(filters_depths_res,
+                                               filters_depths_res +
+                                               filters_depths_skip)),
+                              (self.input_length, filters_depths_skip),
                               name='res_%d_data_slice_4_d%d_s%d' % (res_block_i, dilation, stack_i))(data_x)
 
         skip_x = layers.Slice((slice(self.samples_of_interest_indices[0], self.samples_of_interest_indices[-1] + 1, 1),
-                               Ellipsis), (self.padded_target_field_length, self.config['model']['filters']['depths']['skip']),
+                               Ellipsis), (self.padded_target_field_length, filters_depths_skip),
                               name='res_%d_keep_samples_of_interest_d%d_s%d' % (res_block_i, dilation, stack_i))(skip_x)
 
         res_x = keras.layers.Add()([original_x, res_x])
